@@ -12,6 +12,8 @@ import { Construct } from 'constructs';
 export class IamLoginMonitorStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
+    
+    const IdentityStoreId = this.node.tryGetContext('identityStoreId');
 
     // Create an eventbridge rule that triggers on Console Login events
     const signInRule = new events.Rule(this, 'rule', {
@@ -54,7 +56,8 @@ export class IamLoginMonitorStack extends Stack {
       handler: 'index.handler',
       code: lambda.Code.fromAsset(path.join(__dirname, '../lambda/cron_func')),
       environment: {
-        DatabaseTable: table.tableName
+        DatabaseTable: table.tableName,
+        IdentityStoreID: IdentityStoreId
       }
     });
 // Give cronLambda access to delete iam users

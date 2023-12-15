@@ -1,14 +1,13 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { ScanCommand, DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
-import { IAMClient, DeleteUserCommand } from "@aws-sdk/client-iam"; // ES Modules import
-// Import moment js
+import { ScanCommand, DynamoDBDocumentClient, DeleteCommand } from "@aws-sdk/lib-dynamodb";
+import { IdentitystoreClient, DeleteUserCommand } from "@aws-sdk/client-identitystore"; // ES Modules import// Import moment js
 import moment from "moment";
-import { DeleteCommand } from '@aws-sdk/lib-dynamodb';
+
 
 export const handler = async (event, context) => {
     const client = new DynamoDBClient({ region: "us-east-1" });
     const docClient = DynamoDBDocumentClient.from(client);
-    const iamClient = new IAMClient();
+    const IDStoreClient = new IdentitystoreClient({ region: "us-west-2" });
     const params = {
         TableName : process.env.DatabaseTable,
     };
@@ -29,29 +28,16 @@ export const handler = async (event, context) => {
 
     filteredUsers.forEach(async (arn) => {
         const input = {
-            UserName: arn.substring(arn.lastIndexOf("/") + 1),
+            IdentityStoreID: process.env.IdentityStoreID,
+            UserId: arn.substring(arn.lastIndexOf("/") + 1),
         };
-        // Use the sdk to remove all entities from IAM user
 
 
         const deleteUser = new DeleteUserCommand(input);
 
         console.log(deleteUser);
-        iamClient.send(deleteUser)
-            .then((response) => {
-                console.log(response);
-                const params = {
-                    TableName : process.env.DatabaseTable,
-                    Key: {
-                        arn: arn
-                    }
-                }
-                const command = new DeleteCommand(params);
-                console.log(command);
-                docClient.send(command);
-            }).catch((error) => {
-                console.log(error);
-            })
+        const deleteResponse = await IDStoreClient.send(deleteUser)
+       console.log(deleteResponse);
 
     });
 
